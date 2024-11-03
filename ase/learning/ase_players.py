@@ -36,6 +36,7 @@ from learning import ase_network_builder
 
 class ASEPlayer(amp_players.AMPPlayerContinuous):
     def __init__(self, config):
+        self.pres = True
         self._latent_dim = config['latent_dim']
         self._latent_steps_min = config.get('latent_steps_min', np.inf)
         self._latent_steps_max = config.get('latent_steps_max', np.inf)
@@ -102,6 +103,7 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
             done_env_ids = to_torch(np.arange(num_envs), dtype=torch.long, device=self.device)
 
         rand_vals = self.model.a2c_network.sample_latents(len(done_env_ids))
+        if self.pres: print("[Myi Check] latent during play? ", rand_vals.cpu().numpy())
         self._ase_latents[done_env_ids] = rand_vals
         self._change_char_color(done_env_ids)
 
