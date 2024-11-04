@@ -60,6 +60,9 @@ args = None
 cfg = None
 cfg_train = None
 
+#Myi debug
+print_main = True
+
 def create_rlgpu_env(**kwargs):
     use_horovod = cfg_train['params']['config'].get('multi_gpu', False)
     if use_horovod:
@@ -127,6 +130,7 @@ class RLGPUAlgoObserver(AlgoObserver):
 
 class RLGPUEnv(vecenv.IVecEnv):
     def __init__(self, config_name, num_actors, **kwargs):
+        if print_main: print("INIT -- MAIN (RLGPUEnv)")
         self.env = env_configurations.configurations[config_name]['env_creator'](**kwargs)
         self.use_global_obs = (self.env.num_states > 0)
 
@@ -137,6 +141,7 @@ class RLGPUEnv(vecenv.IVecEnv):
         return
 
     def step(self, action):
+        if print_main: print("STEP -- MAIN (RLGPUEnv)")
         next_obs, reward, is_done, info = self.env.step(action)
 
         # todo: improve, return only dictinary
@@ -148,6 +153,7 @@ class RLGPUEnv(vecenv.IVecEnv):
             return self.full_state["obs"], reward, is_done, info
 
     def reset(self, env_ids=None):
+        if print_main: print("RESET -- MAIN (RLGPUEnv)")
         self.full_state["obs"] = self.env.reset(env_ids)
         if self.use_global_obs:
             self.full_state["states"] = self.env.get_state()

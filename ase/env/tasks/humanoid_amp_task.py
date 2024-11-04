@@ -33,7 +33,8 @@ import env.tasks.humanoid_amp as humanoid_amp
 class HumanoidAMPTask(humanoid_amp.HumanoidAMP):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
         self._enable_task_obs = cfg["env"]["enableTaskObs"]
-
+        self.psignal = cfg["args"].dsignal #if yes, print the logs
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "__init__")
         super().__init__(cfg=cfg,
                          sim_params=sim_params,
                          physics_engine=physics_engine,
@@ -44,6 +45,7 @@ class HumanoidAMPTask(humanoid_amp.HumanoidAMP):
 
     
     def get_obs_size(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_obs_size")
         obs_size = super().get_obs_size()
         if (self._enable_task_obs):
             task_obs_size = self.get_task_obs_size()
@@ -51,14 +53,17 @@ class HumanoidAMPTask(humanoid_amp.HumanoidAMP):
         return obs_size
 
     def get_task_obs_size(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_task_obs_size")
         return 0
 
     def pre_physics_step(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "pre_physics_step")
         super().pre_physics_step(actions)
         self._update_task()
         return
 
     def render(self, sync_frame_time=False):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "render")
         super().render(sync_frame_time)
 
         if self.viewer:
@@ -66,17 +71,21 @@ class HumanoidAMPTask(humanoid_amp.HumanoidAMP):
         return
 
     def _update_task(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_update_task")
         return
 
     def _reset_envs(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_envs")
         super()._reset_envs(env_ids)
         self._reset_task(env_ids)
         return
 
     def _reset_task(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_task")
         return
 
     def _compute_observations(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_observations")
         humanoid_obs = self._compute_humanoid_obs(env_ids)
         
         if (self._enable_task_obs):
@@ -92,10 +101,13 @@ class HumanoidAMPTask(humanoid_amp.HumanoidAMP):
         return
 
     def _compute_task_obs(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_task_obs")
         return NotImplemented
 
     def _compute_reward(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_reward")
         return NotImplemented
 
     def _draw_task(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_draw_task")
         return

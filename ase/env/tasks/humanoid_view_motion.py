@@ -35,6 +35,8 @@ from env.tasks.humanoid_amp import HumanoidAMP
 
 class HumanoidViewMotion(HumanoidAMP):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
+        self.psignal = cfg["args"].dsignal #if yes, print the logs
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "__init__")
         control_freq_inv = cfg["env"]["controlFrequencyInv"]
         self._motion_dt = control_freq_inv * sim_params.dt
 
@@ -55,6 +57,7 @@ class HumanoidViewMotion(HumanoidAMP):
         return
 
     def pre_physics_step(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "pre_physics_step")
         self.actions = actions.to(self.device).clone()
         forces = torch.zeros_like(self.actions)
         force_tensor = gymtorch.unwrap_tensor(forces)
@@ -62,14 +65,17 @@ class HumanoidViewMotion(HumanoidAMP):
         return
 
     def post_physics_step(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "post_physics_step")
         super().post_physics_step()
         self._motion_sync()
         return
     
     def _get_humanoid_collision_filter(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_get_humanoid_collision_filter")
         return 1 # disable self collisions
 
     def _motion_sync(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_motion_sync")
         num_motions = self._motion_lib.num_motions()
         motion_ids = self._motion_ids
         motion_times = self.progress_buf * self._motion_dt
@@ -100,14 +106,17 @@ class HumanoidViewMotion(HumanoidAMP):
         return
 
     def _compute_reset(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_reset")
         motion_lengths = self._motion_lib.get_motion_length(self._motion_ids)
         self.reset_buf[:], self._terminate_buf[:] = compute_view_motion_reset(self.reset_buf, motion_lengths, self.progress_buf, self._motion_dt)
         return
 
     def _reset_actors(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_actors")
         return
 
     def _reset_env_tensors(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_env_tensors")
         num_motions = self._motion_lib.num_motions()
         self._motion_ids[env_ids] = torch.remainder(self._motion_ids[env_ids] + self.num_envs, num_motions)
         

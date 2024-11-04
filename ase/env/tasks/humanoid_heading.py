@@ -42,6 +42,8 @@ TAR_FACING_ACTOR_ID = 2
 
 class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
+        self.psignal = cfg["args"].dsignal #if yes, print the logs
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "__init__")
         self._tar_speed_min = cfg["env"]["tarSpeedMin"]
         self._tar_speed_max = cfg["env"]["tarSpeedMax"]
         self._heading_change_steps_min = cfg["env"]["headingChangeStepsMin"]
@@ -70,17 +72,20 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def get_task_obs_size(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_task_obs_size")
         obs_size = 0
         if (self._enable_task_obs):
             obs_size = 5
         return obs_size
 
     def pre_physics_step(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "pre_physics_step")
         super().pre_physics_step(actions)
         self._prev_root_pos[:] = self._humanoid_root_states[..., 0:3]
         return
     
     def _update_marker(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_update_marker")
         humanoid_root_pos = self._humanoid_root_states[..., 0:3]
         self._marker_pos[..., 0:2] = humanoid_root_pos[..., 0:2] + self._tar_dir
         self._marker_pos[..., 2] = 0.0
@@ -106,6 +111,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _create_envs(self, num_envs, spacing, num_per_row):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_create_envs")
         if (not self.headless):
             self._marker_handles = []
             self._face_marker_handles = []
@@ -115,6 +121,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _load_marker_asset(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_load_marker_asset")
         asset_root = "ase/data/assets/mjcf/"
         asset_file = "heading_marker.urdf"
 
@@ -131,6 +138,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _build_env(self, env_id, env_ptr, humanoid_asset):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_env")
         super()._build_env(env_id, env_ptr, humanoid_asset)
         
         if (not self.headless):
@@ -139,6 +147,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _build_marker(self, env_id, env_ptr):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_marker")
         col_group = env_id
         col_filter = 2
         segmentation_id = 0
@@ -158,6 +167,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _build_marker_state_tensors(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_marker_state_tensors")
         num_actors = self._root_states.shape[0] // self.num_envs
 
         self._marker_states = self._root_states.view(self.num_envs, num_actors, self._root_states.shape[-1])[..., TAR_ACTOR_ID, :]
@@ -173,6 +183,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _update_task(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_update_task")
         reset_task_mask = self.progress_buf >= self._heading_change_steps
         rest_env_ids = reset_task_mask.nonzero(as_tuple=False).flatten()
         if len(rest_env_ids) > 0:
@@ -180,6 +191,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _reset_task(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_task")
         n = len(env_ids)
         if (self._enable_rand_heading):
             rand_theta = 2 * np.pi * torch.rand(n, device=self.device) - np.pi
@@ -202,6 +214,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _compute_task_obs(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_task_obs")
         if (env_ids is None):
             root_states = self._humanoid_root_states
             tar_dir = self._tar_dir
@@ -217,6 +230,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return obs
 
     def _compute_reward(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_reward")
         root_pos = self._humanoid_root_states[..., 0:3]
         root_rot = self._humanoid_root_states[..., 3:7]
         self.rew_buf[:] = compute_heading_reward(root_pos, self._prev_root_pos,  root_rot,
@@ -225,6 +239,7 @@ class HumanoidHeading(humanoid_amp_task.HumanoidAMPTask):
         return
 
     def _draw_task(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_draw_task")
         self._update_marker()
 
         vel_scale = 0.2

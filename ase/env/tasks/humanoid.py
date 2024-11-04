@@ -40,6 +40,8 @@ from env.tasks.base_task import BaseTask
 
 class Humanoid(BaseTask):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
+        self.psignal = cfg["args"].dsignal #if yes, print the logs
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "__init__")
         self.cfg = cfg
         self.sim_params = sim_params
         self.physics_engine = physics_engine
@@ -133,16 +135,20 @@ class Humanoid(BaseTask):
         return
 
     def get_obs_size(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_obs_size")
         return self._num_obs
 
     def get_action_size(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_action_size")
         return self._num_actions
 
     def get_num_actors_per_env(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_num_actors_per_env")
         num_actors = self._root_states.shape[0] // self.num_envs
         return num_actors
 
     def create_sim(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "create_sim")
         self.up_axis_idx = self.set_sim_params_up_axis(self.sim_params, 'z')
         self.sim = super().create_sim(self.device_id, self.graphics_device_id, self.physics_engine, self.sim_params)
 
@@ -151,12 +157,14 @@ class Humanoid(BaseTask):
         return
 
     def reset(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "reset")
         if (env_ids is None):
             env_ids = to_torch(np.arange(self.num_envs), device=self.device, dtype=torch.long)
         self._reset_envs(env_ids)
         return
 
     def set_char_color(self, col, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "set_char_color")
         for env_id in env_ids:
             env_ptr = self.envs[env_id]
             handle = self.humanoid_handles[env_id]
@@ -168,6 +176,7 @@ class Humanoid(BaseTask):
         return
 
     def _reset_envs(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_envs")
         if (len(env_ids) > 0):
             self._reset_actors(env_ids)
             self._reset_env_tensors(env_ids)
@@ -176,6 +185,7 @@ class Humanoid(BaseTask):
         return
 
     def _reset_env_tensors(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_env_tensors")
         env_ids_int32 = self._humanoid_actor_ids[env_ids]
         self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                      gymtorch.unwrap_tensor(self._root_states),
@@ -196,6 +206,7 @@ class Humanoid(BaseTask):
         return
 
     def _create_ground_plane(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_create_ground_plane")
         plane_params = gymapi.PlaneParams()
         plane_params.normal = gymapi.Vec3(0.0, 0.0, 1.0)
         plane_params.static_friction = self.plane_static_friction
@@ -205,6 +216,7 @@ class Humanoid(BaseTask):
         return
 
     def _setup_character_props(self, key_bodies):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_setup_character_props")
         asset_file = self.cfg["env"]["asset"]["assetFileName"]
         num_key_bodies = len(key_bodies)
 
@@ -229,6 +241,7 @@ class Humanoid(BaseTask):
         return
 
     def _build_termination_heights(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_termination_heights")
         head_term_height = 0.3
         shield_term_height = 0.32
 
@@ -247,6 +260,7 @@ class Humanoid(BaseTask):
         return
 
     def _create_envs(self, num_envs, spacing, num_per_row):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_create_envs")
         lower = gymapi.Vec3(-spacing, -spacing, 0.0)
         upper = gymapi.Vec3(spacing, spacing, spacing)
 
@@ -312,6 +326,7 @@ class Humanoid(BaseTask):
         return
     
     def _build_env(self, env_id, env_ptr, humanoid_asset):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_env")
         col_group = env_id
         col_filter = self._get_humanoid_collision_filter()
         segmentation_id = 0
@@ -340,6 +355,7 @@ class Humanoid(BaseTask):
         return
 
     def _build_pd_action_offset_scale(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_pd_action_offset_scale")
         num_joints = len(self._dof_offsets) - 1
         
         lim_low = self.dof_limits_lower.cpu().numpy()
@@ -387,13 +403,16 @@ class Humanoid(BaseTask):
         return
 
     def _get_humanoid_collision_filter(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_get_humanoid_collision_filter")
         return 0
 
     def _compute_reward(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_reward")
         self.rew_buf[:] = compute_humanoid_reward(self.obs_buf)
         return
 
     def _compute_reset(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_reset")
         self.reset_buf[:], self._terminate_buf[:] = compute_humanoid_reset(self.reset_buf, self.progress_buf,
                                                    self._contact_forces, self._contact_body_ids,
                                                    self._rigid_body_pos, self.max_episode_length,
@@ -401,6 +420,7 @@ class Humanoid(BaseTask):
         return
 
     def _refresh_sim_tensors(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_refresh_sim_tensors")
         self.gym.refresh_dof_state_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_rigid_body_state_tensor(self.sim)
@@ -411,6 +431,7 @@ class Humanoid(BaseTask):
         return
 
     def _compute_observations(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_observations")
         obs = self._compute_humanoid_obs(env_ids)
 
         if (env_ids is None):
@@ -421,6 +442,7 @@ class Humanoid(BaseTask):
         return
 
     def _compute_humanoid_obs(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_humanoid_obs")
         if (env_ids is None):
             body_pos = self._rigid_body_pos
             body_rot = self._rigid_body_rot
@@ -437,12 +459,14 @@ class Humanoid(BaseTask):
         return obs
 
     def _reset_actors(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_actors")
         self._humanoid_root_states[env_ids] = self._initial_humanoid_root_states[env_ids]
         self._dof_pos[env_ids] = self._initial_dof_pos[env_ids]
         self._dof_vel[env_ids] = self._initial_dof_vel[env_ids]
         return
 
     def pre_physics_step(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "pre_physics_step")
         self.actions = actions.to(self.device).clone()
         if (self._pd_control):
             pd_tar = self._action_to_pd_targets(self.actions)
@@ -456,6 +480,7 @@ class Humanoid(BaseTask):
         return
 
     def post_physics_step(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "post_physics_step")
         self.progress_buf += 1
 
         self._refresh_sim_tensors()
@@ -472,6 +497,7 @@ class Humanoid(BaseTask):
         return
 
     def render(self, sync_frame_time=False):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "render")
         if self.viewer:
             self._update_camera()
 
@@ -479,6 +505,7 @@ class Humanoid(BaseTask):
         return
 
     def _build_key_body_ids_tensor(self, key_body_names):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_key_body_ids_tensor")
         env_ptr = self.envs[0]
         actor_handle = self.humanoid_handles[0]
         body_ids = []
@@ -492,6 +519,7 @@ class Humanoid(BaseTask):
         return body_ids
 
     def _build_contact_body_ids_tensor(self, contact_body_names):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_contact_body_ids_tensor")
         env_ptr = self.envs[0]
         actor_handle = self.humanoid_handles[0]
         body_ids = []
@@ -505,10 +533,12 @@ class Humanoid(BaseTask):
         return body_ids
 
     def _action_to_pd_targets(self, action):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_action_to_pd_targets")
         pd_tar = self._pd_action_offset + self._pd_action_scale * action
         return pd_tar
 
     def _init_camera(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_init_camera")
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self._cam_prev_char_pos = self._humanoid_root_states[0, 0:3].cpu().numpy()
         
@@ -522,6 +552,7 @@ class Humanoid(BaseTask):
         return
 
     def _update_camera(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_update_camera")
         self.gym.refresh_actor_root_state_tensor(self.sim)
         char_root_pos = self._humanoid_root_states[0, 0:3].cpu().numpy()
         
@@ -540,6 +571,7 @@ class Humanoid(BaseTask):
         return
 
     def _update_debug_viz(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_update_debug_viz")
         self.gym.clear_lines(self.viewer)
         return
 

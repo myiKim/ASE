@@ -40,7 +40,8 @@ from utils import gym_util
 
 class HumanoidAMPGetup(HumanoidAMP):
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
-        
+        self.psignal = cfg["args"].dsignal #if yes, print the logs
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "__init__")
         self._recovery_episode_prob = cfg["env"]["recoveryEpisodeProb"]
         self._recovery_steps = cfg["env"]["recoverySteps"]
         self._fall_init_prob = cfg["env"]["fallInitProb"]
@@ -62,12 +63,14 @@ class HumanoidAMPGetup(HumanoidAMP):
 
     
     def pre_physics_step(self, actions):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "pre_physics_step")
         super().pre_physics_step(actions)
 
         self._update_recovery_count()
         return
 
     def _generate_fall_states(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_generate_fall_states")
         max_steps = 150
         
         env_ids = to_torch(np.arange(self.num_envs), device=self.device, dtype=torch.long)
@@ -104,6 +107,7 @@ class HumanoidAMPGetup(HumanoidAMP):
         return
 
     def _reset_actors(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_actors")
         num_envs = env_ids.shape[0]
         recovery_probs = to_torch(np.array([self._recovery_episode_prob] * num_envs), device=self.device)
         recovery_mask = torch.bernoulli(recovery_probs) == 1.0
@@ -131,10 +135,12 @@ class HumanoidAMPGetup(HumanoidAMP):
         return
 
     def _reset_recovery_episode(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_recovery_episode")
         self._recovery_counter[env_ids] = self._recovery_steps
         return
     
     def _reset_fall_episode(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_fall_episode")
         fall_state_ids = torch.randint_like(env_ids, low=0, high=self._fall_root_states.shape[0])
         self._humanoid_root_states[env_ids] = self._fall_root_states[fall_state_ids]
         self._dof_pos[env_ids] = self._fall_dof_pos[fall_state_ids]
@@ -144,11 +150,13 @@ class HumanoidAMPGetup(HumanoidAMP):
         return
     
     def _reset_envs(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_envs")
         self._reset_fall_env_ids = []
         super()._reset_envs(env_ids)
         return
 
     def _init_amp_obs(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_init_amp_obs")
         super()._init_amp_obs(env_ids)
 
         if (len(self._reset_fall_env_ids) > 0):
@@ -157,11 +165,13 @@ class HumanoidAMPGetup(HumanoidAMP):
         return
 
     def _update_recovery_count(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_update_recovery_count")
         self._recovery_counter -= 1
         self._recovery_counter = torch.clamp_min(self._recovery_counter, 0)
         return
 
     def _compute_reset(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_reset")
         super()._compute_reset()
 
         is_recovery = self._recovery_counter > 0

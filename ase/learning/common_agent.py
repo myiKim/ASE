@@ -49,10 +49,12 @@ from torch import optim
 import learning.amp_datasets as amp_datasets
 
 from tensorboardX import SummaryWriter
-
+valcheck = True
 class CommonAgent(a2c_continuous.A2CAgent):
     def __init__(self, base_name, config):
-        a2c_common.A2CBase.__init__(self, base_name, config)
+        self.lconfig = True
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "__init__")
+        a2c_common.A2CBase.__init__(self, base_name, config) #Myi ??
 
         self._load_config_params(config)
 
@@ -100,6 +102,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return
 
     def init_tensors(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "init_tensors")
         super().init_tensors()
         self.experience_buffer.tensor_dict['next_obses'] = torch.zeros_like(self.experience_buffer.tensor_dict['obses'])
         self.experience_buffer.tensor_dict['next_values'] = torch.zeros_like(self.experience_buffer.tensor_dict['values'])
@@ -108,6 +111,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return
 
     def train(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "train")
         self.init_tensors()
         self.last_mean_rewards = -100500
         start_time = time.time()
@@ -183,6 +187,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return
 
     def set_full_state_weights(self, weights):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "set_full_state_weights")
         self.set_weights(weights)
         self.epoch_num = weights['epoch']
         if self.has_central_value:
@@ -198,6 +203,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return
 
     def train_epoch(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "train_epoch")
         play_time_start = time.time()
         with torch.no_grad():
             if self.is_rnn:
@@ -270,6 +276,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return train_info
 
     def play_steps(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "play_steps")
         self.set_eval()
         
         epinfos = []
@@ -335,6 +342,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return batch_dict
 
     def prepare_dataset(self, batch_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "prepare_dataset")
         obses = batch_dict['obses']
         returns = batch_dict['returns']
         dones = batch_dict['dones']
@@ -379,6 +387,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return
 
     def calc_gradients(self, input_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "calc_gradients")
         self.set_train()
 
         value_preds_batch = input_dict['old_values']
@@ -463,6 +472,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return
 
     def discount_values(self, mb_fdones, mb_values, mb_rewards, mb_next_values):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "discount_values")
         lastgaelam = 0
         mb_advs = torch.zeros_like(mb_rewards)
 
@@ -477,11 +487,13 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return mb_advs
 
     def env_reset(self, env_ids=None):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "env_reset")
         obs = self.vec_env.reset(env_ids)
         obs = self.obs_to_tensors(obs)
         return obs
 
     def bound_loss(self, mu):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "bound_loss")
         if self.bounds_loss_coef is not None:
             soft_bound = 1.0
             mu_loss_high = torch.clamp_min(mu - soft_bound, 0.0)**2
@@ -492,13 +504,16 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return b_loss
 
     def _get_mean_rewards(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_get_mean_rewards")
         return self.game_rewards.get_mean()
 
     def _load_config_params(self, config):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_load_config_params")
         self.last_lr = config['learning_rate']
         return
 
     def _build_net_config(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_build_net_config")
         obs_shape = torch_ext.shape_whc_to_cwh(self.obs_shape)
         config = {
             'actions_num' : self.actions_num,
@@ -506,21 +521,26 @@ class CommonAgent(a2c_continuous.A2CAgent):
             'num_seqs' : self.num_actors * self.num_agents,
             'value_size': self.env_info.get('value_size', 1),
         }
+        # print("[Myi Check] self._amp_observation_space.shape ", config) #31, (253,), 1024, 1
         return config
 
     def _setup_action_space(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_setup_action_space")
         action_space = self.env_info['action_space']
         self.actions_num = action_space.shape[0]
-
+        # if valcheck: print("actions_num: ", self.actions_num) # 31
         # todo introduce device instead of cuda()
         self.actions_low = torch.from_numpy(action_space.low.copy()).float().to(self.ppo_device)
         self.actions_high = torch.from_numpy(action_space.high.copy()).float().to(self.ppo_device)
+        # if valcheck: print("low, high: ", self.actions_low.cpu().numpy(), self.actions_low.cpu().numpy()) #일단은 [-1.]*31 이 박힌상황
         return
 
     def _init_train(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_init_train")
         return
 
     def _eval_critic(self, obs_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_eval_critic")
         self.model.eval()
         obs = obs_dict['obs']
         processed_obs = self._preproc_obs(obs)
@@ -531,6 +551,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return value
 
     def _actor_loss(self, old_action_log_probs_batch, action_log_probs, advantage, curr_e_clip):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_actor_loss")
         ratio = torch.exp(old_action_log_probs_batch - action_log_probs)
         surr1 = advantage * ratio
         surr2 = advantage * torch.clamp(ratio, 1.0 - curr_e_clip,
@@ -547,6 +568,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return info
 
     def _critic_loss(self, value_preds_batch, values, curr_e_clip, return_batch, clip_value):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_critic_loss")
         if clip_value:
             value_pred_clipped = value_preds_batch + \
                     (values - value_preds_batch).clamp(-curr_e_clip, curr_e_clip)
@@ -562,6 +584,7 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return info
     
     def _calc_advs(self, batch_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_calc_advs")
         returns = batch_dict['returns']
         values = batch_dict['values']
 
@@ -574,9 +597,11 @@ class CommonAgent(a2c_continuous.A2CAgent):
         return advantages
 
     def _record_train_batch_info(self, batch_dict, train_info):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_record_train_batch_info")
         return
 
     def _log_train_info(self, train_info, frame):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_log_train_info")
         self.writer.add_scalar('performance/update_time', train_info['update_time'], frame)
         self.writer.add_scalar('performance/play_time', train_info['play_time'], frame)
         self.writer.add_scalar('losses/a_loss', torch_ext.mean_list(train_info['actor_loss']).item(), frame)

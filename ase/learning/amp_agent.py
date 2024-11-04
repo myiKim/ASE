@@ -48,6 +48,8 @@ from tensorboardX import SummaryWriter
 
 class AMPAgent(common_agent.CommonAgent):
     def __init__(self, base_name, config):
+        self.lconfig = True
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "__init__")
         super().__init__(base_name, config)
 
         if self._normalize_amp_input:
@@ -56,23 +58,27 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def init_tensors(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "init_tensors")
         super().init_tensors()
         self._build_amp_buffers()
         return
     
     def set_eval(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "set_eval")
         super().set_eval()
         if self._normalize_amp_input:
             self._amp_input_mean_std.eval()
         return
 
     def set_train(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "set_train")
         super().set_train()
         if self._normalize_amp_input:
             self._amp_input_mean_std.train()
         return
 
     def get_stats_weights(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "get_stats_weights")
         state = super().get_stats_weights()
         if self._normalize_amp_input:
             state['amp_input_mean_std'] = self._amp_input_mean_std.state_dict()
@@ -80,6 +86,7 @@ class AMPAgent(common_agent.CommonAgent):
         return state
 
     def set_stats_weights(self, weights):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "set_stats_weights")
         super().set_stats_weights(weights)
         if self._normalize_amp_input:
             self._amp_input_mean_std.load_state_dict(weights['amp_input_mean_std'])
@@ -87,6 +94,7 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def play_steps(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "play_steps")
         self.set_eval()
 
         epinfos = []
@@ -165,6 +173,7 @@ class AMPAgent(common_agent.CommonAgent):
         return batch_dict
     
     def get_action_values(self, obs_dict, rand_action_probs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "get_action_values")
         processed_obs = self._preproc_obs(obs_dict['obs'])
 
         self.model.eval()
@@ -197,6 +206,7 @@ class AMPAgent(common_agent.CommonAgent):
         return res_dict
 
     def prepare_dataset(self, batch_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "prepare_dataset")
         super().prepare_dataset(batch_dict)
         self.dataset.values_dict['amp_obs'] = batch_dict['amp_obs']
         self.dataset.values_dict['amp_obs_demo'] = batch_dict['amp_obs_demo']
@@ -207,6 +217,7 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def train_epoch(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "train_epoch")
         play_time_start = time.time()
 
         with torch.no_grad():
@@ -292,6 +303,7 @@ class AMPAgent(common_agent.CommonAgent):
         return train_info
 
     def calc_gradients(self, input_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "calc_gradients")
         self.set_train()
 
         value_preds_batch = input_dict['old_values']
@@ -418,6 +430,7 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def _load_config_params(self, config):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_load_config_params")
         super()._load_config_params(config)
         
         # when eps greedy is enabled, rollouts will be generated using a mixture of
@@ -445,11 +458,14 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def _build_net_config(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_build_net_config")
         config = super()._build_net_config()
         config['amp_input_shape'] = self._amp_observation_space.shape
+        # print("[Myi Check] self._amp_observation_space.shape ", self._amp_observation_space.shape) #(1400,)
         return config
     
     def _build_rand_action_probs(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_build_rand_action_probs")
         num_envs = self.vec_env.env.task.num_envs
         env_ids = to_torch(np.arange(num_envs), dtype=torch.float32, device=self.ppo_device)
 
@@ -463,11 +479,13 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def _init_train(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_init_train")
         super()._init_train()
         self._init_amp_demo_buf()
         return
 
     def _disc_loss(self, disc_agent_logit, disc_demo_logit, obs_demo):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_disc_loss")
         # prediction loss
         disc_loss_agent = self._disc_loss_neg(disc_agent_logit)
         disc_loss_demo = self._disc_loss_pos(disc_demo_logit)
@@ -507,16 +525,19 @@ class AMPAgent(common_agent.CommonAgent):
         return disc_info
 
     def _disc_loss_neg(self, disc_logits):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_disc_loss_neg")
         bce = torch.nn.BCEWithLogitsLoss()
         loss = bce(disc_logits, torch.zeros_like(disc_logits))
         return loss
     
     def _disc_loss_pos(self, disc_logits):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_disc_loss_pos")
         bce = torch.nn.BCEWithLogitsLoss()
         loss = bce(disc_logits, torch.ones_like(disc_logits))
         return loss
 
     def _compute_disc_acc(self, disc_agent_logit, disc_demo_logit):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_compute_disc_acc")
         agent_acc = disc_agent_logit < 0
         agent_acc = torch.mean(agent_acc.float())
         demo_acc = disc_demo_logit > 0
@@ -524,10 +545,12 @@ class AMPAgent(common_agent.CommonAgent):
         return agent_acc, demo_acc
 
     def _fetch_amp_obs_demo(self, num_samples):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_fetch_amp_obs_demo")
         amp_obs_demo = self.vec_env.env.fetch_amp_obs_demo(num_samples)
         return amp_obs_demo
 
     def _build_amp_buffers(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_build_amp_buffers")
         batch_shape = self.experience_buffer.obs_base_shape
         self.experience_buffer.tensor_dict['amp_obs'] = torch.zeros(batch_shape + self._amp_observation_space.shape,
                                                                     device=self.ppo_device)
@@ -546,9 +569,18 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def _init_amp_demo_buf(self):
+        #         Purpose:
+        # - Initializes buffer with expert demonstration data
+        # - Used for AMP's discriminator training
+        # - Reference motions for the policy to imitate
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_init_amp_demo_buf")
+        # (Claude) Calculate how many batches needed to fill buffer
         buffer_size = self._amp_obs_demo_buffer.get_buffer_size()
+        # print("[Myi Check] buffer_size == ", buffer_size) #200,000
         num_batches = int(np.ceil(buffer_size / self._amp_batch_size))
+        # print("[Myi Check] num_batches == ", num_batches) #391?
 
+        # (Claude) Fill buffer with demonstration data
         for i in range(num_batches):
             curr_samples = self._fetch_amp_obs_demo(self._amp_batch_size)
             self._amp_obs_demo_buffer.store({'amp_obs': curr_samples})
@@ -556,16 +588,19 @@ class AMPAgent(common_agent.CommonAgent):
         return
     
     def _update_amp_demos(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_update_amp_demos")
         new_amp_obs_demo = self._fetch_amp_obs_demo(self._amp_batch_size)
         self._amp_obs_demo_buffer.store({'amp_obs': new_amp_obs_demo})
         return
 
     def _preproc_amp_obs(self, amp_obs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_preproc_amp_obs")
         if self._normalize_amp_input:
             amp_obs = self._amp_input_mean_std(amp_obs)
         return amp_obs
 
     def _combine_rewards(self, task_rewards, amp_rewards):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_combine_rewards")
         disc_r = amp_rewards['disc_rewards']
         
         combined_rewards = self._task_reward_w * task_rewards + \
@@ -573,10 +608,12 @@ class AMPAgent(common_agent.CommonAgent):
         return combined_rewards
 
     def _eval_disc(self, amp_obs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_eval_disc")
         proc_amp_obs = self._preproc_amp_obs(amp_obs)
         return self.model.a2c_network.eval_disc(proc_amp_obs)
     
     def _calc_advs(self, batch_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_calc_advs")
         returns = batch_dict['returns']
         values = batch_dict['values']
         rand_action_mask = batch_dict['rand_action_mask']
@@ -589,6 +626,7 @@ class AMPAgent(common_agent.CommonAgent):
         return advantages
 
     def _calc_amp_rewards(self, amp_obs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_calc_amp_rewards")
         disc_r = self._calc_disc_rewards(amp_obs)
         output = {
             'disc_rewards': disc_r
@@ -596,6 +634,7 @@ class AMPAgent(common_agent.CommonAgent):
         return output
 
     def _calc_disc_rewards(self, amp_obs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_calc_disc_rewards")
         with torch.no_grad():
             disc_logits = self._eval_disc(amp_obs)
             prob = 1 / (1 + torch.exp(-disc_logits)) 
@@ -605,6 +644,7 @@ class AMPAgent(common_agent.CommonAgent):
         return disc_r
 
     def _store_replay_amp_obs(self, amp_obs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_store_replay_amp_obs")
         buf_size = self._amp_replay_buffer.get_buffer_size()
         buf_total_count = self._amp_replay_buffer.get_total_count()
         if (buf_total_count > buf_size):
@@ -622,11 +662,13 @@ class AMPAgent(common_agent.CommonAgent):
 
     
     def _record_train_batch_info(self, batch_dict, train_info):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_record_train_batch_info")
         super()._record_train_batch_info(batch_dict, train_info)
         train_info['disc_rewards'] = batch_dict['disc_rewards']
         return
 
     def _log_train_info(self, train_info, frame):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_log_train_info")
         super()._log_train_info(train_info, frame)
 
         self.writer.add_scalar('losses/disc_loss', torch_ext.mean_list(train_info['disc_loss']).item(), frame)
@@ -644,6 +686,7 @@ class AMPAgent(common_agent.CommonAgent):
         return
 
     def _amp_debug(self, info):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_amp_debug")
         with torch.no_grad():
             amp_obs = info['amp_obs']
             amp_obs = amp_obs[0:1]

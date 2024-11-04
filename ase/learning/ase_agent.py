@@ -39,10 +39,13 @@ from learning import ase_network_builder
 
 class ASEAgent(amp_agent.AMPAgent):
     def __init__(self, base_name, config):
+        self.lconfig = True
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "__init__")
         super().__init__(base_name, config)
         return
 
     def init_tensors(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "init_tensors")
         super().init_tensors()
         
         batch_shape = self.experience_buffer.obs_base_shape
@@ -62,6 +65,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return
     
     def play_steps(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "play_steps")
         self.set_eval()
         
         epinfos = []
@@ -69,6 +73,7 @@ class ASEAgent(amp_agent.AMPAgent):
         update_list = self.update_list
 
         for n in range(self.horizon_length):
+            print("[Myi] horizon == ", n)
             self.obs = self.env_reset(done_indices)
             self.experience_buffer.update_data('obses', n, self.obs['obs'])
 
@@ -143,6 +148,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return batch_dict
 
     def get_action_values(self, obs_dict, ase_latents, rand_action_probs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "get_action_values")
         processed_obs = self._preproc_obs(obs_dict['obs'])
 
         self.model.eval()
@@ -176,6 +182,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return res_dict
 
     def prepare_dataset(self, batch_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "prepare_dataset")
         super().prepare_dataset(batch_dict)
         
         ase_latents = batch_dict['ase_latents']
@@ -185,6 +192,7 @@ class ASEAgent(amp_agent.AMPAgent):
 
     
     def calc_gradients(self, input_dict):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "calc_gradients")
         self.set_train()
 
         value_preds_batch = input_dict['old_values']
@@ -336,24 +344,33 @@ class ASEAgent(amp_agent.AMPAgent):
         return
     
     def env_reset(self, env_ids=None):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "env_reset")
         obs = super().env_reset(env_ids)
         
         if (env_ids is None):
+            print("[Myi] env id none case ")
             num_envs = self.vec_env.env.task.num_envs
             env_ids = to_torch(np.arange(num_envs), dtype=torch.long, device=self.ppo_device)
 
         if (len(env_ids) > 0):
+            print("[Myi] reset_latents should be called?")
             self._reset_latents(env_ids)
             self._reset_latent_step_count(env_ids)
+        # else:
+        #     print("[Myi] right now .. length of envid is zero..", len(env_ids))
 
         return obs
 
-    def _reset_latent_step_count(self, env_ids):
+    def _reset_latent_step_count(self, env_ids): #(Claude) Assigns random durations for how long each environment should keep its current latent code
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_reset_latent_step_count")
+        #print("env_ids: ", env_ids) #[0,1, ..., num_envs=>내가 1024해놓으니 1024]
+        # print("This?" , self._latent_reset_steps[env_ids]) #[47, 143,130, ... ,30,140, 120]
         self._latent_reset_steps[env_ids] = torch.randint_like(self._latent_reset_steps[env_ids], low=self._latent_steps_min, 
                                                          high=self._latent_steps_max)
         return
 
     def _load_config_params(self, config):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_load_config_params")
         super()._load_config_params(config)
         
         self._latent_dim = config['latent_dim']
@@ -373,14 +390,20 @@ class ASEAgent(amp_agent.AMPAgent):
         return
     
     def _build_net_config(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_build_net_config")
         config = super()._build_net_config()
         config['ase_latent_shape'] = (self._latent_dim,)
+        print("[Myi Check] (self._latent_dim,) ", (self._latent_dim,)) #(1400,)
         return config
 
     def _reset_latents(self, env_ids):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_reset_latents")
         n = len(env_ids)
+        # print("[Myi] check n == ", n)
         z = self._sample_latents(n)
+        # print("[Myi] what is z? ", z, "its shape: ", z.shape) #(7,64) z = [[1.4239e-01, -1.1613e-01, ... ],[-7.8849e-02, ... ]]
         self._ase_latents[env_ids] = z
+        # print("[Myi] Check how latents looks like after sampling: ", self._ase_latents[env_ids], "its shape: ", self._ase_latents[env_ids].shape) #(7,64) z랑 동일
 
         if (self.vec_env.env.task.viewer):
             self._change_char_color(env_ids)
@@ -388,10 +411,12 @@ class ASEAgent(amp_agent.AMPAgent):
         return
 
     def _sample_latents(self, n):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_sample_latents")
         z = self.model.a2c_network.sample_latents(n)
         return z
 
     def _update_latents(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_update_latents")
         new_latent_envs = self._latent_reset_steps <= self.vec_env.env.task.progress_buf
 
         need_update = torch.any(new_latent_envs)
@@ -407,10 +432,12 @@ class ASEAgent(amp_agent.AMPAgent):
         return
 
     def _eval_actor(self, obs, ase_latents):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_eval_actor")
         output = self.model.a2c_network.eval_actor(obs=obs, ase_latents=ase_latents)
         return output
 
     def _eval_critic(self, obs_dict, ase_latents):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_eval_critic")
         self.model.eval()
         obs = obs_dict['obs']
         processed_obs = self._preproc_obs(obs)
@@ -421,6 +448,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return value
 
     def _calc_amp_rewards(self, amp_obs, ase_latents):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_calc_amp_rewards")
         disc_r = self._calc_disc_rewards(amp_obs)
         enc_r = self._calc_enc_rewards(amp_obs, ase_latents)
         output = {
@@ -430,6 +458,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return output
 
     def _calc_enc_rewards(self, amp_obs, ase_latents):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_calc_enc_rewards")
         with torch.no_grad():
             enc_pred = self._eval_enc(amp_obs)
             err = self._calc_enc_error(enc_pred, ase_latents)
@@ -439,6 +468,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return enc_r
 
     def _enc_loss(self, enc_pred, ase_latent, enc_obs, loss_mask):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_enc_loss")
         enc_err = self._calc_enc_error(enc_pred, ase_latent)
         #mask_sum = torch.sum(loss_mask)
         #enc_err = enc_err.squeeze(-1)
@@ -471,6 +501,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return enc_info
 
     def _diversity_loss(self, obs, action_params, ase_latents):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_diversity_loss")
         assert(self.model.a2c_network.is_continuous)
 
         n = obs.shape[0]
@@ -495,21 +526,26 @@ class ASEAgent(amp_agent.AMPAgent):
         return diversity_loss
 
     def _calc_enc_error(self, enc_pred, ase_latent):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_calc_enc_error")
         err = enc_pred * ase_latent
         err = -torch.sum(err, dim=-1, keepdim=True)
         return err
 
     def _enable_enc_grad_penalty(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_enable_enc_grad_penalty")
         return self._enc_grad_penalty != 0
 
     def _enable_amp_diversity_bonus(self):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_enable_amp_diversity_bonus")
         return self._amp_diversity_bonus != 0
 
     def _eval_enc(self, amp_obs):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_eval_enc")
         proc_amp_obs = self._preproc_amp_obs(amp_obs)
         return self.model.a2c_network.eval_enc(proc_amp_obs)
 
     def _combine_rewards(self, task_rewards, amp_rewards):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_combine_rewards")
         disc_r = amp_rewards['disc_rewards']
         enc_r = amp_rewards['enc_rewards']
         combined_rewards = self._task_reward_w * task_rewards \
@@ -518,11 +554,13 @@ class ASEAgent(amp_agent.AMPAgent):
         return combined_rewards
 
     def _record_train_batch_info(self, batch_dict, train_info):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_record_train_batch_info")
         super()._record_train_batch_info(batch_dict, train_info)
         train_info['enc_rewards'] = batch_dict['enc_rewards']
         return
 
     def _log_train_info(self, train_info, frame):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_log_train_info")
         super()._log_train_info(train_info, frame)
         
         self.writer.add_scalar('losses/enc_loss', torch_ext.mean_list(train_info['enc_loss']).item(), frame)
@@ -540,6 +578,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return
 
     def _change_char_color(self, env_ids):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_change_char_color")
         base_col = np.array([0.4, 0.4, 0.4])
         range_col = np.array([0.0706, 0.149, 0.2863])
         range_sum = np.linalg.norm(range_col)
@@ -551,6 +590,7 @@ class ASEAgent(amp_agent.AMPAgent):
         return
 
     def _amp_debug(self, info, ase_latents):
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "_amp_debug")
         with torch.no_grad():
             amp_obs = info['amp_obs']
             amp_obs = amp_obs

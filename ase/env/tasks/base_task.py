@@ -22,6 +22,8 @@ import torch
 class BaseTask():
 
     def __init__(self, cfg, enable_camera_sensors=False):
+        self.psignal = cfg["args"].dsignal #if yes, print the logs
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "__init__")
         self.gym = gymapi.acquire_gym()
 
         self.device_type = cfg.get("device_type", "cuda")
@@ -107,6 +109,7 @@ class BaseTask():
 
     # set gravity based on up axis and return axis index
     def set_sim_params_up_axis(self, sim_params, axis):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "set_sim_params_up_axis")
         if axis == 'z':
             sim_params.up_axis = gymapi.UP_AXIS_Z
             sim_params.gravity.x = 0
@@ -116,6 +119,7 @@ class BaseTask():
         return 1
 
     def create_sim(self, compute_device, graphics_device, physics_engine, sim_params):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "create_sim")
         sim = self.gym.create_sim(compute_device, graphics_device, physics_engine, sim_params)
         if sim is None:
             print("*** Failed to create sim")
@@ -124,6 +128,7 @@ class BaseTask():
         return sim
 
     def step(self, actions):
+        if self.psignal: print("[Module startsMyi] %s"%__name__, "step")
         if self.dr_randomizations.get('actions', None):
             actions = self.dr_randomizations['actions']['noise_lambda'](actions)
 
@@ -144,9 +149,11 @@ class BaseTask():
             self.obs_buf = self.dr_randomizations['observations']['noise_lambda'](self.obs_buf)
 
     def get_states(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_states")
         return self.states_buf
 
     def render(self, sync_frame_time=False):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "render")
         if self.viewer:
             # check for window closed
             if self.gym.query_viewer_has_closed(self.viewer):
@@ -172,6 +179,7 @@ class BaseTask():
 
     def get_actor_params_info(self, dr_params, env):
         """Returns a flat array of actor params, their names and ranges."""
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_actor_params_info")
         if "actor_params" not in dr_params:
             return None
         params = []
@@ -209,6 +217,7 @@ class BaseTask():
 
     # Apply randomizations only on resets, due to current PhysX limitations
     def apply_randomizations(self, dr_params):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "apply_randomizations")
         # If we don't have a randomization frequency, randomize every step
         rand_freq = dr_params.get("frequency", 1)
 
@@ -408,6 +417,7 @@ class BaseTask():
         raise NotImplementedError
 
     def _physics_step(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_physics_step")
         for i in range(self.control_freq_inv):
             self.render()
             self.gym.simulate(self.sim)
@@ -419,6 +429,7 @@ class BaseTask():
 
 def get_attr_val_from_sample(sample, offset, prop, attr):
     """Retrieves param value for the given prop and attr from the sample."""
+    if self.psignal: print("[Module starts Myi] %s"%__name__, "get_attr_val_from_sample")
     if sample is None:
         return None, 0
     if isinstance(prop, np.ndarray):

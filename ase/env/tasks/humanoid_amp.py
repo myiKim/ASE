@@ -49,6 +49,8 @@ class HumanoidAMP(Humanoid):
 
     def __init__(self, cfg, sim_params, physics_engine, device_type, device_id, headless):
         state_init = cfg["env"]["stateInit"]
+        self.psignal = cfg["args"].dsignal #if yes, print the logs
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "__init__")
         self._state_init = HumanoidAMP.StateInit[state_init]
         self._hybrid_init_prob = cfg["env"]["hybridInitProb"]
         self._num_amp_obs_steps = cfg["env"]["numAMPObsSteps"]
@@ -76,6 +78,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def post_physics_step(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "post_physics_step")
         super().post_physics_step()
         
         self._update_hist_amp_obs()
@@ -87,10 +90,11 @@ class HumanoidAMP(Humanoid):
         return
 
     def get_num_amp_obs(self):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "get_num_amp_obs")
         return self._num_amp_obs_steps * self._num_amp_obs_per_step
 
     def fetch_amp_obs_demo(self, num_samples):
-
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "fetch_amp_obs_demo")
         if (self._amp_obs_demo_buf is None):
             self._build_amp_obs_demo_buf(num_samples)
         else:
@@ -111,6 +115,7 @@ class HumanoidAMP(Humanoid):
         return amp_obs_demo_flat
 
     def build_amp_obs_demo(self, motion_ids, motion_times0):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "build_amp_obs_demo")
         dt = self.dt
 
         motion_ids = torch.tile(motion_ids.unsqueeze(-1), [1, self._num_amp_obs_steps])
@@ -129,10 +134,12 @@ class HumanoidAMP(Humanoid):
         return amp_obs_demo
 
     def _build_amp_obs_demo_buf(self, num_samples):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_build_amp_obs_demo_buf")
         self._amp_obs_demo_buf = torch.zeros((num_samples, self._num_amp_obs_steps, self._num_amp_obs_per_step), device=self.device, dtype=torch.float32)
         return
         
     def _setup_character_props(self, key_bodies):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_setup_character_props")
         super()._setup_character_props(key_bodies)
 
         asset_file = self.cfg["env"]["asset"]["assetFileName"]
@@ -149,6 +156,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _load_motion(self, motion_file):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_load_motion")
         assert(self._dof_offsets[-1] == self.num_dof)
         self._motion_lib = MotionLib(motion_file=motion_file,
                                      dof_body_ids=self._dof_body_ids,
@@ -158,6 +166,7 @@ class HumanoidAMP(Humanoid):
         return
     
     def _reset_envs(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_envs")
         self._reset_default_env_ids = []
         self._reset_ref_env_ids = []
 
@@ -167,6 +176,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _reset_actors(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_actors")
         if (self._state_init == HumanoidAMP.StateInit.Default):
             self._reset_default(env_ids)
         elif (self._state_init == HumanoidAMP.StateInit.Start
@@ -179,6 +189,7 @@ class HumanoidAMP(Humanoid):
         return
     
     def _reset_default(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_default")
         self._humanoid_root_states[env_ids] = self._initial_humanoid_root_states[env_ids]
         self._dof_pos[env_ids] = self._initial_dof_pos[env_ids]
         self._dof_vel[env_ids] = self._initial_dof_vel[env_ids]
@@ -186,6 +197,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _reset_ref_state_init(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_ref_state_init")
         num_envs = env_ids.shape[0]
         motion_ids = self._motion_lib.sample_motions(num_envs)
         
@@ -214,6 +226,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _reset_hybrid_state_init(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_reset_hybrid_state_init")
         num_envs = env_ids.shape[0]
         ref_probs = to_torch(np.array([self._hybrid_init_prob] * num_envs), device=self.device)
         ref_init_mask = torch.bernoulli(ref_probs) == 1.0
@@ -229,6 +242,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _init_amp_obs(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_init_amp_obs")
         self._compute_amp_observations(env_ids)
 
         if (len(self._reset_default_env_ids) > 0):
@@ -241,11 +255,13 @@ class HumanoidAMP(Humanoid):
         return
 
     def _init_amp_obs_default(self, env_ids):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_init_amp_obs_default")
         curr_amp_obs = self._curr_amp_obs_buf[env_ids].unsqueeze(-2)
         self._hist_amp_obs_buf[env_ids] = curr_amp_obs
         return
 
     def _init_amp_obs_ref(self, env_ids, motion_ids, motion_times):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_init_amp_obs_ref")
         dt = self.dt
         motion_ids = torch.tile(motion_ids.unsqueeze(-1), [1, self._num_amp_obs_steps - 1])
         motion_times = motion_times.unsqueeze(-1)
@@ -264,6 +280,7 @@ class HumanoidAMP(Humanoid):
         return
     
     def _set_env_state(self, env_ids, root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_set_env_state")
         self._humanoid_root_states[env_ids, 0:3] = root_pos
         self._humanoid_root_states[env_ids, 3:7] = root_rot
         self._humanoid_root_states[env_ids, 7:10] = root_vel
@@ -274,6 +291,7 @@ class HumanoidAMP(Humanoid):
         return
 
     def _update_hist_amp_obs(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_update_hist_amp_obs")
         if (env_ids is None):
             for i in reversed(range(self._amp_obs_buf.shape[1] - 1)):
                 self._amp_obs_buf[:, i + 1] = self._amp_obs_buf[:, i]
@@ -283,6 +301,7 @@ class HumanoidAMP(Humanoid):
         return
     
     def _compute_amp_observations(self, env_ids=None):
+        if self.psignal: print("[Module starts Myi] %s"%__name__, "_compute_amp_observations")
         key_body_pos = self._rigid_body_pos[:, self._key_body_ids, :]
         if (env_ids is None):
             self._curr_amp_obs_buf[:] = build_amp_observations(self._rigid_body_pos[:, 0, :],

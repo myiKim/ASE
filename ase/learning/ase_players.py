@@ -36,7 +36,8 @@ from learning import ase_network_builder
 
 class ASEPlayer(amp_players.AMPPlayerContinuous):
     def __init__(self, config):
-        self.pres = True
+        self.lconfig = True
+        if self.lconfig: print("[Module starts Myi Learning] %s"%__name__, "__init__")
         self._latent_dim = config['latent_dim']
         self._latent_steps_min = config.get('latent_steps_min', np.inf)
         self._latent_steps_max = config.get('latent_steps_max', np.inf)
@@ -127,7 +128,7 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
         self._latent_step_count = np.random.randint(self._latent_steps_min, self._latent_steps_max)
         return
 
-    def _calc_amp_rewards(self, amp_obs, ase_latents):
+    def _calc_amp_rewards(self, amp_obs, ase_latents): #(Myi) same as ase_agent
         disc_r = self._calc_disc_rewards(amp_obs)
         enc_r = self._calc_enc_rewards(amp_obs, ase_latents)
         output = {
@@ -136,7 +137,7 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
         }
         return output
     
-    def _calc_enc_rewards(self, amp_obs, ase_latents):
+    def _calc_enc_rewards(self, amp_obs, ase_latents): #(Myi) same as ase_agent
         with torch.no_grad():
             enc_pred = self._eval_enc(amp_obs)
             err = self._calc_enc_error(enc_pred, ase_latents)
@@ -145,7 +146,7 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
 
         return enc_r
     
-    def _calc_enc_error(self, enc_pred, ase_latent):
+    def _calc_enc_error(self, enc_pred, ase_latent): #(Myi) same as ase_agent
         err = enc_pred * ase_latent
         err = -torch.sum(err, dim=-1, keepdim=True)
         return err
@@ -154,7 +155,7 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
         proc_amp_obs = self._preproc_amp_obs(amp_obs)
         return self.model.a2c_network.eval_enc(proc_amp_obs)
 
-    def _amp_debug(self, info):
+    def _amp_debug(self, info): #(Myi) same as ase_agent
         with torch.no_grad():
             amp_obs = info['amp_obs']
             amp_obs = amp_obs
@@ -170,7 +171,7 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
             print("disc_pred: ", disc_pred, disc_reward, enc_reward)
         return
 
-    def _change_char_color(self, env_ids):
+    def _change_char_color(self, env_ids): #(Myi) same as ase_agent
         base_col = np.array([0.4, 0.4, 0.4])
         range_col = np.array([0.0706, 0.149, 0.2863])
         range_sum = np.linalg.norm(range_col)
