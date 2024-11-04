@@ -69,6 +69,10 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
         obs = self._preproc_obs(obs)
         ase_latents = self._ase_latents
 
+        # Add debug print (11/4)
+        if hasattr(self, 'env') and self.env.task.viewer:
+            if self.lconfig: print("[Myi] Current latents:", self._ase_latents[0].cpu().numpy())
+
         input_dict = {
             'is_train': False,
             'prev_actions': None, 
@@ -104,11 +108,36 @@ class ASEPlayer(amp_players.AMPPlayerContinuous):
             done_env_ids = to_torch(np.arange(num_envs), dtype=torch.long, device=self.device)
 
         rand_vals = self.model.a2c_network.sample_latents(len(done_env_ids))
-        if self.pres: print("[Myi Check] latent during play? ", rand_vals.cpu().numpy())
+        if self.lconfig: print("[Myi Check] latent during play? ", rand_vals.cpu().numpy())
         self._ase_latents[done_env_ids] = rand_vals
         self._change_char_color(done_env_ids)
 
         return
+#################### (Myungin Test starts) [24/11/4] ########################
+
+    def create_fixed_latent(self, latent_dim, device):
+        """Helper function to create a test latent vector"""
+        # You can modify these values for different behaviors
+        z = torch.zeros(latent_dim, dtype=torch.float32, device=device)
+        z[3] = 1.0
+        return z
+
+    def _reset_latents_Myi(self, done_env_ids=None): #쓸때 되면 이름 바꿔서 쓰기 
+        if (done_env_ids is None):
+            num_envs = self.env.task.num_envs
+            done_env_ids = to_torch(np.arange(num_envs), dtype=torch.long, device=self.device)
+    
+        # Instead of random sampling, use fixed latent
+        fixed_z = self.create_fixed_latent(self._latent_dim, self.device)
+        self._ase_latents[done_env_ids] = fixed_z.unsqueeze(0).expand(len(done_env_ids), -1)
+        
+        if self.lconfig: 
+            print("[Myi Check] Fixed latent: ", fixed_z.cpu().numpy())
+        
+        self._change_char_color(done_env_ids)
+
+        return
+#################### (Myungin Test ends) [24/11/4] ########################
 
     def _update_latents(self):
         if (self._latent_step_count <= 0):
